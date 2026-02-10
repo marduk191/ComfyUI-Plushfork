@@ -1628,8 +1628,13 @@ class request_utils:
                 user_content.append(processed_images)  # Add single image
 
         if user_content:
-            user_role['content'] = user_content   
+            user_role['content'] = user_content
             messages.append(user_role)
+
+        # Debug logging
+        self.j_mngr.log_events(f"DEBUG build_data_multi: messages structure:", TroubleSgltn.Severity.INFO, True)
+        import json
+        self.j_mngr.log_events(json.dumps(messages, indent=2, default=str)[:2000], TroubleSgltn.Severity.INFO, True)
 
         return messages
 
@@ -1806,17 +1811,27 @@ class request_utils:
             return None
 
         # **Case 1: If image is a tensor, convert it to Base64**
-        if isinstance(image, torch.Tensor):  
+        if isinstance(image, torch.Tensor):
             N = self.img_u.extract_batch_size(image)  # Extract batch size
-            self.j_mngr.log_events(f"Image size extracted as: {N}")
+            self.j_mngr.log_events(f"DEBUG process_image: Tensor detected with batch size: {N}, request_type: {request_type}", TroubleSgltn.Severity.INFO, True)
             # Convert each tensor to Base64 using self.img_u.tensor_to_b64()
             base64_images = [self.img_u.tensor_to_base64(image[i]) for i in range(N)]
+            self.j_mngr.log_events(f"DEBUG process_image: Converted to {len(base64_images)} base64 images", TroubleSgltn.Severity.INFO, True)
 
-            # Recursively process the Base64 images
-            return self.process_image(base64_images, request_type)
+            # Special case: if only one image in batch, return single dict instead of list
+            if N == 1:
+                result = self.process_image(base64_images[0], request_type)
+                self.j_mngr.log_events(f"DEBUG process_image: Single image, returning dict directly", TroubleSgltn.Severity.INFO, True)
+                return result
+            else:
+                # Multiple images: recursively process the list
+                result = self.process_image(base64_images, request_type)
+                self.j_mngr.log_events(f"DEBUG process_image: Multiple images, result type: {type(result)}", TroubleSgltn.Severity.INFO, True)
+                return result
 
         # **Case 2: If it's a list, process each item recursively**
         if isinstance(image, list):
+            self.j_mngr.log_events(f"DEBUG process_image: List detected with {len(image)} items", TroubleSgltn.Severity.INFO, True)
             # Check if we have mixed types (both tensors and strings), which is likely an error
             if not all(isinstance(img, (torch.Tensor, str)) for img in image):
                 self.j_mngr.log_events("Error: List contains unsupported types.", TroubleSgltn.Severity.ERROR, True)
@@ -1825,10 +1840,15 @@ class request_utils:
             # Recursively process each item (whether tensor or Base64 string)
             processed_list = [self.process_image(img, request_type) for img in image]
             # Filter out None values
-            return [item for item in processed_list if item is not None]
+            result = [item for item in processed_list if item is not None]
+            self.j_mngr.log_events(f"DEBUG process_image: List processing result: {len(result)} items, first item type: {type(result[0]) if result else 'N/A'}", TroubleSgltn.Severity.INFO, True)
+            if result and isinstance(result[0], dict):
+                self.j_mngr.log_events(f"DEBUG process_image: First item keys: {result[0].keys()}", TroubleSgltn.Severity.INFO, True)
+            return result
 
         # **Case 3: If it's already a Base64 string, return in correct format based on request type**
         if isinstance(image, str):
+            self.j_mngr.log_events(f"DEBUG process_image: String (base64) detected, request_type: {request_type}", TroubleSgltn.Severity.INFO, True)
             if request_type == self.mode.CLAUDE:
                 return {
                     "type": "image",
@@ -1844,12 +1864,14 @@ class request_utils:
                     "data": image
                 }
             else:  # Default to OpenAI format
-                return {
+                result = {
                     "type": "image_url",
                     "image_url": {
                         "url": f"data:image/png;base64,{image}"
                     }
                 }
+                self.j_mngr.log_events(f"DEBUG process_image: Returning OpenAI format with keys: {result.keys()}", TroubleSgltn.Severity.INFO, True)
+                return result
 
         self.j_mngr.log_events("Image file is invalid.", TroubleSgltn.Severity.WARNING, True)
         return None

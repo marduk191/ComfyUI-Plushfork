@@ -1160,14 +1160,16 @@ class AdvPromptEnhancer:
             "hidden": {
                 "unique_id": "UNIQUE_ID",
             },
-            "optional": {  
+            "optional": {
                 "Instruction": ("STRING",{"multiline": True, "default": "", "forceInput": True}),
                 "Examples_or_Context": ("STRING",{"multiline": True, "default": "", "forceInput": True}),
                 "Prompt": ("STRING",{"multiline": True, "default": "", "forceInput": True}),
                 "Add_Parameter": ("LIST", {"default": None, "forceInput": True}),
                 "Custom_ApiKey":("KEY",{"default": "", "forceInput": True}),
-                "image" : ("IMAGE", {"default": None})                          
-                
+                "image" : ("IMAGE", {"default": None}),
+                "image2" : ("IMAGE", {"default": None}),
+                "image3" : ("IMAGE", {"default": None}),
+                "image4" : ("IMAGE", {"default": None})
             }
         } 
 
@@ -1180,8 +1182,8 @@ class AdvPromptEnhancer:
 
     CATEGORY = "Plush🧸/Prompt"
 
-    def gogo(self, AI_service, ChatGPT_model, Groq_model, Google_Gemini_model, Anthropic_model, Ollama_model, Ollama_model_unload, Optional_model, creative_latitude, tokens, seed, examples_delimiter, 
-              Number_of_Tries:str="", Add_Parameter=None, LLM_URL:str="", Instruction:str="", Prompt:str = "", Custom_ApiKey:str="", Examples_or_Context:str ="", image=None, unique_id=None):
+    def gogo(self, AI_service, ChatGPT_model, Groq_model, Google_Gemini_model, Anthropic_model, Ollama_model, Ollama_model_unload, Optional_model, creative_latitude, tokens, seed, examples_delimiter,
+              Number_of_Tries:str="", Add_Parameter=None, LLM_URL:str="", Instruction:str="", Prompt:str = "", Custom_ApiKey:str="", Examples_or_Context:str ="", image=None, image2=None, image3=None, image4=None, unique_id=None):
 
         if unique_id:
             self.trbl.reset("Advanced Prompt Enhancer, Node #"+unique_id)
@@ -1197,10 +1199,21 @@ class AdvPromptEnhancer:
         Examples = Enhancer.undefined_to_none(Examples_or_Context)
         LLM_URL = Enhancer.undefined_to_none(LLM_URL)
         image = Enhancer.undefined_to_none(image)
+        image2 = Enhancer.undefined_to_none(image2)
+        image3 = Enhancer.undefined_to_none(image3)
+        image4 = Enhancer.undefined_to_none(image4)
+
+        # Combine multiple images into a list (NOT concatenated tensor)
+        # This allows each image to be processed separately
+        if any(img is not None for img in [image2, image3, image4]):
+            images_to_combine = [img for img in [image, image2, image3, image4] if img is not None]
+            if len(images_to_combine) > 0:
+                image = images_to_combine  # Pass as a list, not concatenated tensor
+
         if Custom_ApiKey is None or Custom_ApiKey == "undefined":
-            Custom_ApiKey = ""  
-        self.cFig.custom_key = Custom_ApiKey 
-        
+            Custom_ApiKey = ""
+        self.cFig.custom_key = Custom_ApiKey
+
         if not isinstance(Add_Parameter, list):
             Add_Parameter = []
 

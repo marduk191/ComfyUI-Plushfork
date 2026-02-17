@@ -1,3 +1,5 @@
+Author no longer users ComfyUI nor accepts pull requests, this will be renamed to a new project soon.
+
 # Plush-for-ComfyUI
 ****
 *   [**How to use Advanced Prompt Enhancer with OpenRouter**](#how-to-connect-to-openrouter) and other remote AI services that are not preconfigured.

@@ -1,4 +1,4 @@
-Author no longer users ComfyUI nor accepts pull requests, this will be renamed to a new project soon.
+Author no longer uses ComfyUI nor accepts pull requests, this will be renamed to a new project soon.
 
 # Plush-for-ComfyUI
 ****
